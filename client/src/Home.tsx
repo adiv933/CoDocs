@@ -1,19 +1,75 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { v4 as uuidv4 } from "uuid";
+import { io } from "socket.io-client";
+
+const API_URL = "http://localhost:3000"; //! for dev mode only
+const socket = io(API_URL);
 
 const Home = () => {
     const [docId, setDocId] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
     const navigate = useNavigate();
 
-    const createNewDocument = () => {
-        const newDocId = uuidv4();
-        navigate(`/doc/${newDocId}`);
+    const getUserId = () => {
+        return localStorage.getItem("userId");
     };
 
-    const joinDocument = () => {
+    const createNewDocument = async () => {
+        setLoading(true);
+        setError("");
+        const owner = getUserId();
+
+        try {
+            const response = await fetch(`${API_URL}/document/create`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ owner }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                localStorage.setItem("userId", data.owner);
+                socket.emit("joinDocument", data.docId);
+                navigate(`/doc/${data.docId}`);
+            } else {
+                setError(data.message || "Failed to create document");
+            }
+        } catch (err) {
+            setError("Server error, please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const joinRoom = async () => {
         if (!docId.trim()) return;
-        navigate(`/doc/${docId}`);
+        setLoading(true);
+        setError("");
+        const userId = getUserId();
+
+        try {
+            const response = await fetch(`${API_URL}/document/join`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ docId, userId }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                localStorage.setItem("userId", data.userId);
+                socket.emit("joinDocument", docId);
+                navigate(`/doc/${docId}`);
+            } else {
+                setError(data.message || "Room does not exist.");
+            }
+        } catch (err) {
+            setError("Server error, please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -26,15 +82,20 @@ const Home = () => {
                 <p className="text-lg text-gray-700 mb-8">
                     Create & collaborate on documents in real time.
                 </p>
+
+                {error && <p className="text-red-600 mb-4">{error}</p>}
+
                 <button
                     onClick={createNewDocument}
-                    className="w-full flex items-center justify-center gap-1 bg-black text-white py-3 text-lg font-semibold uppercase tracking-wide border border-black transition hover:bg-white hover:text-black"
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-1 bg-black text-white py-3 text-lg font-semibold uppercase tracking-wide border border-black transition hover:bg-white hover:text-black disabled:opacity-50"
                 >
-                    Create New Document
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
-                    </svg>
-
+                    {loading ? "Creating..." : "Create New Document"}
+                    {!loading && (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
+                        </svg>
+                    )}
                 </button>
 
                 <div className="my-6 border-t border-black"></div>
@@ -48,10 +109,11 @@ const Home = () => {
                         className="w-full px-4 py-3 text-lg border border-black bg-transparent focus:outline-none focus:ring-2 focus:ring-black"
                     />
                     <button
-                        onClick={joinDocument}
-                        className="bg-black text-white px-6 py-3 text-lg font-semibold uppercase border border-black transition hover:bg-white hover:text-black"
+                        onClick={joinRoom}
+                        disabled={loading}
+                        className="bg-black text-white px-6 py-3 text-lg font-semibold uppercase border border-black transition hover:bg-white hover:text-black disabled:opacity-50"
                     >
-                        Join
+                        {loading ? "Joining..." : "Join"}
                     </button>
                 </div>
             </div>
