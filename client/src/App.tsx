@@ -1,11 +1,18 @@
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Home from "./Home";
 import TextEditor from "./TextEditor";
 
 function App() {
   return (
-    <div className="min-h-screen">
-      <h1 className="text-4xl font-bold text-center text-gray-800 border-b-3">CoDocs</h1>
-      <TextEditor />
-    </div>
+    <Router>
+      <div className="w-full min-h-screen">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/doc/:docId" element={<TextEditor />} />
+          <Route path="*" element={<h2 className="text-center mt-20 text-2xl">404 - Page Not Found</h2>} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
