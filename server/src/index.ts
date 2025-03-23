@@ -54,8 +54,8 @@ io.on("connection", (socket) => {
         socket.to(docId).emit("setBold", content);
     });
 
-    socket.on("italics", ({ docId, content }) => {
-        socket.to(docId).emit("setItalics", content);
+    socket.on("italic", ({ docId, content }) => {
+        socket.to(docId).emit("setItalic", content);
     });
 
     socket.on("underline", ({ docId, content }) => {
@@ -68,16 +68,28 @@ io.on("connection", (socket) => {
 });
 
 // api routes
-app.post("/document/create", async (req, res) => {
+app.post("/document/create", async (req, res): Promise<any> => {
     var { owner } = req.body;
+    let user;
 
     if (!owner) {
         try {
-            const newUser = new User();
-            await newUser.save();
-            owner = newUser._id;
+            user = new User();
+            await user.save();
+            owner = user._id;
         } catch (error) {
             console.error("Error creating user:", error);
+            return res.status(500).json({ message: "Error creating user" });
+        }
+    } else {
+        try {
+            user = await User.findById(owner);
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+        } catch (error) {
+            console.error("Error fetching user:", error);
+            return res.status(500).json({ message: "Error fetching user" });
         }
     }
 
@@ -91,28 +103,44 @@ app.post("/document/create", async (req, res) => {
         });
 
         await newDocument.save();
-        res.status(201).json({ message: "Document created", owner, docId });
+        res.status(201).json({ message: "Document created", user, docId });
     } catch (err) {
+        console.error("Error creating document:", err);
         res.status(500).json({ message: "Failed to create document" });
     }
 });
 
-app.post("/document/join", async (req, res) => {
+app.post("/document/join", async (req, res): Promise<any> => {
     const { docId } = req.body;
     var { userId } = req.body;
+    let user;
 
     if (!userId) {
-        const newUser = new User();
-        await newUser.save();
-        userId = newUser._id;
+        try {
+            user = new User();
+            await user.save();
+            userId = user._id;
+        } catch (error) {
+            console.error("Error creating user:", error);
+            return res.status(500).json({ message: "Error creating user" });
+        }
+    } else {
+        try {
+            user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+        } catch (error) {
+            console.error("Error fetching user:", error);
+            return res.status(500).json({ message: "Error fetching user" });
+        }
     }
 
     try {
         const document = await Document.findOne({ docId });
 
         if (!document) {
-            res.status(404).json({ message: "Document not found" });
-            return;
+            return res.status(404).json({ message: "Document not found" });
         }
 
         if (!document.access.includes(userId)) {
@@ -120,11 +148,11 @@ app.post("/document/join", async (req, res) => {
             await document.save();
         }
 
-        res.status(200).json({ message: "Joined document", userId, docId });
+        res.status(200).json({ message: "Joined document", user, docId });
     } catch (err) {
+        console.error("Error joining document:", err);
         res.status(500).json({ message: "Failed to join document" });
     }
-
 });
 
 app.get('/test', (req, res) => {

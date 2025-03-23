@@ -30,9 +30,9 @@ const Home = () => {
             const data = await response.json();
 
             if (response.ok) {
-                localStorage.setItem("userId", data.owner);
+                localStorage.setItem("userId", data.user._id);
                 socket.emit("joinDocument", data.docId);
-                navigate(`/doc/${data.docId}`);
+                navigate(`/doc/${data.docId}`, { state: data.user });
             } else {
                 setError(data.message || "Failed to create document");
             }
@@ -44,7 +44,10 @@ const Home = () => {
     };
 
     const joinRoom = async () => {
-        if (!docId.trim()) return;
+        if (!docId.trim()) {
+            setError("Please enter a valid document ID.");
+            return;
+        }
         setLoading(true);
         setError("");
         const userId = getUserId();
@@ -59,9 +62,9 @@ const Home = () => {
             const data = await response.json();
 
             if (response.ok) {
-                localStorage.setItem("userId", data.userId);
+                localStorage.setItem("userId", data.user._id);
                 socket.emit("joinDocument", docId);
-                navigate(`/doc/${docId}`);
+                navigate(`/doc/${docId}`, { state: data.user });
             } else {
                 setError(data.message || "Room does not exist.");
             }
