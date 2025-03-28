@@ -3,8 +3,15 @@ import { useNavigate } from "react-router-dom";
 
 const API_URL = "http://localhost:3000"; //! for dev mode only
 
+interface IpreviousDocs {
+    _id: string;
+    docId: string;
+    content: string;
+    createdAt: string;
+}
+
 const PreviousDocs = () => {
-    const [previousDocs, setPreviousDocs] = useState([]);
+    const [previousDocs, setPreviousDocs] = useState<IpreviousDocs[]>([]);
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
@@ -33,7 +40,7 @@ const PreviousDocs = () => {
     }, []);
 
     const formatDate = (dateString: string | number | Date) => {
-        const options = { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" };
+        const options: Intl.DateTimeFormatOptions = { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" };
         return new Date(dateString).toLocaleDateString(undefined, options);
     };
 
