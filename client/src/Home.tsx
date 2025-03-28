@@ -1,22 +1,25 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
+import Avatar from "@mui/material/Avatar";
 import PreviousDocs from "./PreviousDocs";
+import { User } from "./GroupAvatars";
 
-const API_URL = "http://localhost:3000"; //! for dev mode only
+const API_URL = "http://localhost:3000";
 const socket = io(API_URL);
 
 const Home = () => {
     const [docId, setDocId] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [user, setUser] = useState<User>();
     const navigate = useNavigate();
 
     const getUserId = () => localStorage.getItem("userId");
 
     useEffect(() => {
-        window.scrollTo(0, 0)
-    }, [])
+        window.scrollTo(0, 0);
+    }, []);
 
     const createNewDocument = async () => {
         setLoading(true);
@@ -34,6 +37,7 @@ const Home = () => {
 
             if (response.ok) {
                 localStorage.setItem("userId", data.user._id);
+                setUser(data.user);
                 socket.emit("joinDocument", data.docId);
                 navigate(`/doc/${data.docId}`, { state: data.user });
             } else {
@@ -66,6 +70,7 @@ const Home = () => {
 
             if (response.ok) {
                 localStorage.setItem("userId", data.user._id);
+                setUser(data.user); // ✅ Set user state
                 socket.emit("joinDocument", docId);
                 navigate(`/doc/${docId}`, { state: data.user });
             } else {
@@ -79,7 +84,14 @@ const Home = () => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-white text-black p-8">
+        <div className="relative flex flex-col items-center justify-center min-h-screen bg-white text-black p-8">
+            {/* ✅ Avatar in Top-Right Corner */}
+            {user && (
+                <div className="absolute top-6 right-8">
+                    <Avatar alt={user.username} src={user.avatar} sx={{ width: 48, height: 48 }} />
+                </div>
+            )}
+
             <div className="w-full max-w-xl border border-black p-10 text-center">
                 <h1 className="text-4xl font-semibold flex items-center justify-center mb-6">
                     <img src="/C.png" alt="C" className="w-10 h-10 border-2" />

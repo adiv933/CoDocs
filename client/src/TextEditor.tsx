@@ -4,8 +4,10 @@ import { io } from "socket.io-client";
 import { useLocation, useParams } from "react-router-dom";
 import CustomTooltip from "./CustomTooltip";
 import GroupAvatars from "./GroupAvatars";
+import jsPDF from "jspdf";
 
-const socket = io("http://localhost:3000");
+const API_URL = "http://localhost:3000"
+const socket = io(API_URL);
 
 const TextEditor = () => {
     const { docId } = useParams<{ docId: string }>();
@@ -28,7 +30,7 @@ const TextEditor = () => {
             socket.on("loadDocument", ({ content, users }) => {
                 setText(content || "");
                 setUsers(users || []);
-                // console.log('users', users)
+                console.log(users)
             });
 
             socket.on("updateText", setText);
@@ -79,13 +81,33 @@ const TextEditor = () => {
         }
     };
 
+    const handleSaveAsPDF = () => {
+        const doc = new jsPDF();
+        doc.setFontSize(14);
+
+        let y = 10;
+        const lineHeight = 7;
+        const lines = doc.splitTextToSize(text, 180);
+
+        lines.forEach((line: string) => {
+            if (y > 280) {
+                doc.addPage();
+                y = 10;
+            }
+            doc.text(line, 10, y);
+            y += lineHeight;
+        });
+
+        doc.save(`Document_${docId}.pdf`);
+        showToast("PDF downloaded successfully!");
+    };
+
     const showToast = (message: string) => {
         setToastMessage(message);
         setToastVisible(true);
 
         setTimeout(() => {
             setToastVisible(false);
-
             setTimeout(() => {
                 setToastMessage(null);
             }, 300);
@@ -96,15 +118,7 @@ const TextEditor = () => {
         <div className="flex flex-col items-center justify-start min-h-screen bg-white text-black p-4 relative">
             {avatar && username && users && (
                 <div className="absolute top-4 right-4 flex items-center gap-2 group">
-                    {/* <img
-                        src={avatar}
-                        alt={username}
-                        className="w-10 h-10 rounded-full border-2 border-black cursor-pointer"
-                    />
-                    <div className="absolute right-12 top-1/2 -translate-y-1/2 bg-black text-white text-sm px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        {username}
-                    </div> */}
-                    <GroupAvatars users={users} />
+                    <GroupAvatars currentUser={username} users={users} />
                 </div>
             )}
 
@@ -147,27 +161,51 @@ const TextEditor = () => {
                     </CustomTooltip>
                 </div>
 
-                <CustomTooltip title="Share">
-                    <button
-                        onClick={handleShareLink}
-                        className="p-3 border border-black text-lg uppercase transition bg-white text-black hover:bg-black hover:text-white"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={1.5}
-                            stroke="currentColor"
-                            className="w-5 h-5"
+                <div className="flex gap-3">
+                    <CustomTooltip title="Save as PDF">
+                        <button
+                            onClick={handleSaveAsPDF}
+                            className="p-3 border border-black text-lg uppercase transition bg-white text-black hover:bg-black hover:text-white"
                         >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
-                            />
-                        </svg>
-                    </button>
-                </CustomTooltip>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth="1.5"
+                                stroke="currentColor"
+                                className="w-5 h-5"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z"
+                                />
+                            </svg>
+                        </button>
+                    </CustomTooltip>
+
+                    <CustomTooltip title="Share">
+                        <button
+                            onClick={handleShareLink}
+                            className="p-3 border border-black text-lg uppercase transition bg-white text-black hover:bg-black hover:text-white"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={1.5}
+                                stroke="currentColor"
+                                className="w-5 h-5"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
+                                />
+                            </svg>
+                        </button>
+                    </CustomTooltip>
+                </div>
             </div>
 
             <textarea

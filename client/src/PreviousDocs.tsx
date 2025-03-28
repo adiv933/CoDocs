@@ -11,6 +11,7 @@ interface IpreviousDocs {
 }
 
 const PreviousDocs = () => {
+    const [user, setUser] = useState({});
     const [previousDocs, setPreviousDocs] = useState<IpreviousDocs[]>([]);
     const [error, setError] = useState("");
     const navigate = useNavigate();
@@ -26,7 +27,8 @@ const PreviousDocs = () => {
             const data = await response.json();
 
             if (response.ok) {
-                setPreviousDocs(data);
+                setPreviousDocs(data.documents);
+                setUser(data.user)
             } else {
                 setError(data.message || "Failed to fetch previous documents.");
             }
@@ -56,7 +58,7 @@ const PreviousDocs = () => {
                         <div
                             key={doc._id}
                             className="p-4 border border-black cursor-pointer hover:bg-gray-100 transition"
-                            onClick={() => navigate(`/doc/${doc.docId}`)}
+                            onClick={() => navigate(`/doc/${doc.docId}`, { state: user })}
                         >
                             <h3 className="text-lg font-semibold mb-2">{formatDate(doc.createdAt)}</h3>
                             <p className="text-gray-700 line-clamp-2">{doc.content.substring(0, 100)}...</p>

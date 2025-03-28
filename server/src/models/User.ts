@@ -8,8 +8,8 @@ export interface IUser extends Document {
 
 const UserSchema = new Schema<IUser>(
     {
-        username: { type: String, required: true },
-        avatar: { type: String, required: true },
+        username: { type: String },
+        avatar: { type: String },
     },
     { timestamps: true }
 );

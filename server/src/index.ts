@@ -195,10 +195,11 @@ app.get("/document/all", async (req, res) => {
     }
 
     try {
+        const user = await UserModel.findById(userId)
         const documents = await DocumentModel.find({ owner: userId })
-            .sort({ createdAt: -1 }) 
+            .sort({ createdAt: -1 })
             .select("docId content createdAt");
-        res.status(200).json(documents);
+        res.status(200).json({ user, documents });
     } catch (error) {
         console.error("Error fetching documents:", error);
         res.status(500).json({ message: "Internal server error." });
@@ -210,5 +211,5 @@ app.get('/test', (req, res) => {
 });
 
 server.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}/`);
+    console.log(`Server running on Port:${PORT}`);
 });
