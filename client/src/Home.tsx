@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
+import PreviousDocs from "./PreviousDocs";
 
 const API_URL = "http://localhost:3000"; //! for dev mode only
 const socket = io(API_URL);
@@ -11,9 +12,11 @@ const Home = () => {
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
-    const getUserId = () => {
-        return localStorage.getItem("userId");
-    };
+    const getUserId = () => localStorage.getItem("userId");
+
+    useEffect(() => {
+        window.scrollTo(0, 0)
+    }, [])
 
     const createNewDocument = async () => {
         setLoading(true);
@@ -76,7 +79,7 @@ const Home = () => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-white text-black p-6">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-white text-black p-8">
             <div className="w-full max-w-xl border border-black p-10 text-center">
                 <h1 className="text-4xl font-semibold flex items-center justify-center mb-6">
                     <img src="/C.png" alt="C" className="w-10 h-10 border-2" />
@@ -95,7 +98,14 @@ const Home = () => {
                 >
                     {loading ? "Creating..." : "Create New Document"}
                     {!loading && (
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4.5">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2}
+                            stroke="currentColor"
+                            className="size-4.5"
+                        >
                             <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
                         </svg>
                     )}
@@ -120,6 +130,8 @@ const Home = () => {
                     </button>
                 </div>
             </div>
+
+            <PreviousDocs />
         </div>
     );
 };

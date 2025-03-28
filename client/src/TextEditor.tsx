@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { Bold, Italic, Underline, Link } from "lucide-react";
+import { Bold, Italic, Underline } from "lucide-react";
 import { io } from "socket.io-client";
 import { useLocation, useParams } from "react-router-dom";
+import CustomTooltip from "./CustomTooltip";
+import GroupAvatars from "./GroupAvatars";
 
 const socket = io("http://localhost:3000");
 
@@ -12,6 +14,7 @@ const TextEditor = () => {
     const { username, avatar } = user || {};
 
     const [text, setText] = useState("");
+    const [users, setUsers] = useState([]);
     const [bold, setBold] = useState(false);
     const [italic, setItalic] = useState(false);
     const [underline, setUnderline] = useState(false);
@@ -22,8 +25,10 @@ const TextEditor = () => {
         if (docId) {
             socket.emit("joinDocument", docId);
 
-            socket.on("loadDocument", (content) => {
+            socket.on("loadDocument", ({ content, users }) => {
                 setText(content || "");
+                setUsers(users || []);
+                // console.log('users', users)
             });
 
             socket.on("updateText", setText);
@@ -89,22 +94,23 @@ const TextEditor = () => {
 
     return (
         <div className="flex flex-col items-center justify-start min-h-screen bg-white text-black p-4 relative">
-            {avatar && username && (
+            {avatar && username && users && (
                 <div className="absolute top-4 right-4 flex items-center gap-2 group">
-                    <img
+                    {/* <img
                         src={avatar}
                         alt={username}
                         className="w-10 h-10 rounded-full border-2 border-black cursor-pointer"
                     />
                     <div className="absolute right-12 top-1/2 -translate-y-1/2 bg-black text-white text-sm px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         {username}
-                    </div>
+                    </div> */}
+                    <GroupAvatars users={users} />
                 </div>
             )}
 
             <div className="w-full max-w-6xl border-b border-black flex gap-3 p-4 items-center justify-between">
                 <div className="flex gap-3">
-                    <div className="relative group">
+                    <CustomTooltip title="Bold">
                         <button
                             className={`p-3 border border-black text-lg uppercase transition ${bold
                                 ? "bg-black text-white"
@@ -114,15 +120,9 @@ const TextEditor = () => {
                         >
                             <Bold className="w-5 h-5" />
                         </button>
-                        <span
-                            className="absolute left-1/2 top-12 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                        >
-                            Bold
-                        </span>
-                    </div>
+                    </CustomTooltip>
 
-                    {/* Italic Button with Tooltip */}
-                    <div className="relative group">
+                    <CustomTooltip title="Italics">
                         <button
                             className={`p-3 border border-black text-lg uppercase transition ${italic
                                 ? "bg-black text-white"
@@ -132,15 +132,9 @@ const TextEditor = () => {
                         >
                             <Italic className="w-5 h-5" />
                         </button>
-                        <span
-                            className="absolute left-1/2 top-12 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                        >
-                            Italic
-                        </span>
-                    </div>
+                    </CustomTooltip>
 
-                    {/* Underline Button with Tooltip */}
-                    <div className="relative group">
+                    <CustomTooltip title="Underline">
                         <button
                             className={`p-3 border border-black text-lg uppercase transition ${underline
                                 ? "bg-black text-white"
@@ -150,16 +144,10 @@ const TextEditor = () => {
                         >
                             <Underline className="w-5 h-5" />
                         </button>
-                        <span
-                            className="absolute left-1/2 top-12 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                        >
-                            Underline
-                        </span>
-                    </div>
+                    </CustomTooltip>
                 </div>
 
-                {/* Copy Link Button with Tooltip */}
-                <div className="relative group">
+                <CustomTooltip title="Share">
                     <button
                         onClick={handleShareLink}
                         className="p-3 border border-black text-lg uppercase transition bg-white text-black hover:bg-black hover:text-white"
@@ -179,12 +167,7 @@ const TextEditor = () => {
                             />
                         </svg>
                     </button>
-                    <span
-                        className="absolute left-1/2 top-12 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    >
-                        Copy ID
-                    </span>
-                </div>
+                </CustomTooltip>
             </div>
 
             <textarea

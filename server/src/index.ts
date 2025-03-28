@@ -4,9 +4,9 @@ import { Server } from "socket.io";
 import cors from "cors";
 import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
-import Document from "./models/Document";
 import mongoose from "mongoose";
-import User from "./models/User";
+import { DocumentModel } from "./models/Document";
+import { IUser, UserModel } from "./models/User";
 
 dotenv.config();
 
@@ -37,17 +37,48 @@ io.on("connection", (socket) => {
     console.log(`[+] New client connected: ${socket.id}`);
 
     socket.on("joinDocument", async (docId) => {
-        socket.join(docId);
-        console.log(`[+] Client ${socket.id} joined document: ${docId}`);
+        try {
+            socket.join(docId);
+            console.log(`[+] Client ${socket.id} joined document: ${docId}`);
 
-        const document = await Document.findOne({ docId });
-        if (document) {
-            socket.emit("loadDocument", document.content);
+            const document = await DocumentModel.findOne({ docId })
+                .populate<{ access: IUser[] }>("access", "username avatar")
+                .exec();
+
+            if (document) {
+                const usersWithAccess = document.access.map((user) => ({
+                    username: user.username,
+                    avatar: user.avatar,
+                }));
+
+                socket.emit("loadDocument", {
+                    content: document.content,
+                    users: usersWithAccess,
+                });
+            } else {
+                console.log(`[!] Document not found: ${docId}`);
+                socket.emit("error", { message: "Document not found" });
+            }
+        } catch (error) {
+            console.error("Error joining document:", error);
+            socket.emit("error", { message: "Failed to load document" });
         }
     });
 
     socket.on("edit", ({ docId, content }) => {
         socket.to(docId).emit("updateText", content);
+
+        let cachedContent = "";
+        setInterval(async () => {
+            if (cachedContent !== content) {
+                await DocumentModel.findOneAndUpdate(
+                    { docId },
+                    { content: content }
+                );
+                cachedContent = content;
+                console.log(`[+] Autosaved changes from doc: ${docId}`);
+            }
+        }, 5000);
     });
 
     socket.on("bold", ({ docId, content }) => {
@@ -74,7 +105,7 @@ app.post("/document/create", async (req, res): Promise<any> => {
 
     if (!owner) {
         try {
-            user = new User();
+            user = new UserModel();
             await user.save();
             owner = user._id;
         } catch (error) {
@@ -83,7 +114,7 @@ app.post("/document/create", async (req, res): Promise<any> => {
         }
     } else {
         try {
-            user = await User.findById(owner);
+            user = await UserModel.findById(owner);
             if (!user) {
                 return res.status(404).json({ message: "User not found" });
             }
@@ -95,7 +126,7 @@ app.post("/document/create", async (req, res): Promise<any> => {
 
     try {
         const docId = uuidv4();
-        const newDocument = new Document({
+        const newDocument = new DocumentModel({
             docId,
             owner,
             content: "",
@@ -117,7 +148,7 @@ app.post("/document/join", async (req, res): Promise<any> => {
 
     if (!userId) {
         try {
-            user = new User();
+            user = new UserModel();
             await user.save();
             userId = user._id;
         } catch (error) {
@@ -126,7 +157,7 @@ app.post("/document/join", async (req, res): Promise<any> => {
         }
     } else {
         try {
-            user = await User.findById(userId);
+            user = await UserModel.findById(userId);
             if (!user) {
                 return res.status(404).json({ message: "User not found" });
             }
@@ -137,7 +168,7 @@ app.post("/document/join", async (req, res): Promise<any> => {
     }
 
     try {
-        const document = await Document.findOne({ docId });
+        const document = await DocumentModel.findOne({ docId });
 
         if (!document) {
             return res.status(404).json({ message: "Document not found" });
@@ -152,6 +183,25 @@ app.post("/document/join", async (req, res): Promise<any> => {
     } catch (err) {
         console.error("Error joining document:", err);
         res.status(500).json({ message: "Failed to join document" });
+    }
+});
+
+app.get("/document/all", async (req, res) => {
+    const { userId } = req.query;
+
+    if (!userId) {
+        res.status(400).json({ message: "User ID is required." });
+        return;
+    }
+
+    try {
+        const documents = await DocumentModel.find({ owner: userId })
+            .sort({ createdAt: -1 }) 
+            .select("docId content createdAt");
+        res.status(200).json(documents);
+    } catch (error) {
+        console.error("Error fetching documents:", error);
+        res.status(500).json({ message: "Internal server error." });
     }
 });
 
