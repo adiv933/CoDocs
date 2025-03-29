@@ -1,10 +1,10 @@
 import { Tooltip, TooltipProps, tooltipClasses } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { ReactNode } from "react";
+import { ReactElement } from "react";
 
 interface CustomTooltipProps {
     title: string;
-    children: ReactNode;
+    children: ReactElement;
 }
 
 const StyledTooltip = styled(({ className, ...props }: TooltipProps) => (
