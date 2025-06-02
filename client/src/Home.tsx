@@ -4,8 +4,8 @@ import { io } from "socket.io-client";
 import Avatar from "@mui/material/Avatar";
 import PreviousDocs from "./PreviousDocs";
 import { User } from "./GroupAvatars";
+import { API_URL } from "./config";
 
-const API_URL = "http://localhost:3000";
 const socket = io(API_URL);
 
 const Home = () => {

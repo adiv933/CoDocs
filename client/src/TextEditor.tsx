@@ -5,8 +5,8 @@ import { useLocation, useParams } from "react-router-dom";
 import CustomTooltip from "./CustomTooltip";
 import GroupAvatars from "./GroupAvatars";
 import jsPDF from "jspdf";
+import { API_URL } from "./config";
 
-const API_URL = "http://localhost:3000"
 const socket = io(API_URL);
 
 const TextEditor = () => {

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-const API_URL = "http://localhost:3000"; //! for dev mode only
+import { API_URL } from "./config";
 
 interface IpreviousDocs {
     _id: string;
